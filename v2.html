@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DAMI X-PRO - مشغل قنوات IPTV متقدم وآمن">
+    <title>DAMI X-PRO | الإصدار المحسن</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --accent: #d4af37;
+            --bg: #050505;
+            --card-bg: #111;
+            --text: #ffffff;
+            --border: #333;
+            --header-bg: #0a0a0a;
+        }
+        
+        :root[data-theme="light"] {
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --header-bg: #ffffff;
+        }
+        
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .group-btn {
+            transition: 0.2s;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            background: var(--card-bg);
+            color: var(--text);
+            user-select: none;
+        }
+        
+        .group-btn.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* تمييز زر المفضلة */
+        .group-btn.fav-group {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .group-btn.fav-group.active {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            padding: 15px;
+            min-height: 400px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative; /* من أجل زر المفضلة */
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .card img {
+            width: 100%;
+            height: 80px;
+            object-fit: contain;
+            background: var(--bg);
+            border-radius: 5px;
+            margin-bottom: 8px;
+            pointer-events: none;
+        }
+
+        /* زر القلب */
+        .fav-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 14px;
+            color: var(--text);
+            opacity: 0.5;
+            transition: 0.2s;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 4px;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fav-icon:hover {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .fav-icon.active {
+            color: #ef4444;
+            opacity: 1;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .loading-bar-inner {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: 0.2s;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            border-color: var(--accent);
+        }
+        
+        .load-more-btn {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: opacity 0.3s;
+        }
+        
+        .load-more-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 8px;
+                padding: 10px;
+            }
+            .card img { height: 60px; }
+            .card { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="hidden fixed inset-0 bg-black/90 z-[2000] flex flex-col items-center justify-center">
+        <div class="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="pBar" class="loading-bar-inner"></div>
+        </div>
+        <p class="mt-4 text-sm font-bold" id="statusText">جاري تحميل الملف...</p>
+    </div>
+
+    <header class="p-4 bg-[var(--header-bg)] border-b border-[var(--border)] flex justify-between items-center sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <h1 class="font-black text-xl text-[var(--accent)]">DAMI X-PRO</h1>
+            <span class="hidden md:inline text-xs bg-[var(--accent)] text-[var(--bg)] px-2 py-1 rounded-full">Secure Edition</span>
+        </div>
+        <div class="flex gap-2 items-center">
+            <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="تغيير المظهر">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </div>
+            <select id="lang" onchange="setLang(this.value)" class="bg-[var(--card-bg)] text-[var(--text)] text-xs p-2 rounded border border-[var(--border)] outline-none">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+            </select>
+            <button onclick="showModal()" class="bg-[var(--accent)] text-[var(--bg)] text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition shadow-lg shadow-[var(--accent)]/20">
+                <i class="fas fa-upload ml-1"></i> <span class="hidden sm:inline">استيراد M3U</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="p-4 border-b border-[var(--border)] bg-[var(--header-bg)] sticky top-[73px] z-40">
+            <div class="relative max-w-2xl mx-auto">
+                <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" 
+                       placeholder="ابحث عن قناة (اكتب للبحث الفوري)..." 
+                       class="w-full bg-[var(--card-bg)] text-[var(--text)] py-3 px-10 rounded-full border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition shadow-inner"
+                       oninput="debouncedSearch()">
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto p-4">
+            <div class="bg-black aspect-video shadow-2xl rounded-xl overflow-hidden border border-[var(--border)] relative group">
+                <video id="player" playsinline controls class="w-full h-full"></video>
+            </div>
+            <div id="nowPlaying" class="mt-2 text-sm text-[var(--accent)] font-bold text-center hidden"></div>
+        </div>
+
+        <div class="relative group">
+            <div id="groups" class="flex overflow-x-auto p-4 gap-2 no-scrollbar bg-[var(--header-bg)] border-b border-[var(--border)] items-center">
+                </div>
+            <div class="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[var(--bg)] to-transparent pointer-events-none"></div>
+            <div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[var(--bg)] to-transparent pointer-events-none"></div>
+        </div>
+
+        <div id="grid" class="channel-grid">
+            <div class="col-span-full text-center py-20 text-zinc-500 flex flex-col items-center justify-center min-h-[300px]">
+                <div class="w-20 h-20 bg-[var(--card-bg)] rounded-full flex items-center justify-center mb-4 border border-[var(--border)]">
+                    <i class="fas fa-tv text-4xl opacity-50"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">مرحباً بك في DAMI X-PRO</h3>
+                <p class="text-sm opacity-70 max-w-md">قم باستيراد ملف M3U للبدء في المشاهدة. يمكنك أيضاً إضافة القنوات إلى المفضلة للوصول السريع.</p>
+                <button onclick="showModal()" class="mt-6 bg-[var(--accent)] text-[var(--bg)] px-8 py-3 rounded-full font-bold hover:scale-105 transition">
+                    <i class="fas fa-plus ml-2"></i> إضافة ملف
+                </button>
+            </div>
+        </div>
+
+        <button id="loadMoreBtn" class="load-more-btn hidden" onclick="loadMoreChannels()">
+            <i class="fas fa-spinner ml-1"></i> تحميل المزيد
+        </button>
+    </main>
+
+    <div id="importModal" class="modal">
+        <div class="bg-[var(--card-bg)] p-8 rounded-2xl w-full max-w-md border border-[var(--border)] shadow-2xl transform transition-all scale-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-[var(--text)]">
+                    <i class="fas fa-file-import text-[var(--accent)] ml-2"></i> إضافة قائمة تشغيل
+                </h2>
+                <button onclick="hideModal()" class="text-gray-500 hover:text-red-500"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="mb-6 p-8 border-2 border-dashed border-[var(--border)] rounded-xl text-center bg-[var(--bg)] transition hover:border-[var(--accent)] relative group">
+                <input type="file" id="fileIn" accept=".m3u,.m3u8" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <i class="fas fa-cloud-upload-alt text-4xl text-[var(--accent)] mb-3 group-hover:scale-110 transition"></i>
+                <p class="text-sm text-[var(--text)] font-bold">اضغط هنا أو اسحب الملف</p>
+                <p class="text-xs text-gray-500 mt-1">ندعم ملفات M3U و M3U8</p>
+            </div>
+            
+            <button onclick="processFile()" class="w-full bg-[var(--accent)] text-[var(--bg)] font-bold py-3.5 rounded-xl hover:opacity-90 transition shadow-lg shadow-[var(--accent)]/20 flex items-center justify-center">
+                <i class="fas fa-play ml-2"></i> تشغيل القنوات
+            </button>
+        </div>
+    </div>
+
+    <footer class="mt-10 py-8 border-t border-[var(--border)] bg-[var(--header-bg)] text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <p class="text-[var(--accent)] font-bold text-lg mb-2">DAMI X-PRO</p>
+            <p class="text-xs text-gray-500">تم التطوير لتحسين تجربة المشاهدة</p>
+            <div class="flex justify-center gap-4 mt-4 text-gray-500">
+                <i class="fab fa-github hover:text-[var(--text)] cursor-pointer"></i>
+                <i class="fab fa-twitter hover:text-[var(--text)] cursor-pointer"></i>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.10/dist/hls.min.js"></script>
+
+    <script>
+        // --- Configuration & State ---
+        const App = {
+            channelsByGroup: new Map(),
+            allChannels: [],
+            filteredChannels: [],
+            favorites: JSON.parse(localStorage.getItem('dami_favorites') || '[]'),
+            currentGroup: "الكل",
+            currentTheme: localStorage.getItem('dami_theme') || 'dark',
+            currentLanguage: localStorage.getItem('dami_language') || 'ar',
+            currentPage: 1,
+            itemsPerPage: 60,
+            hlsInstance: null,
+            searchQuery: '',
+            searchTimeout: null // For debouncing
+        };
+
+        // --- DOM Elements ---
+        const player = new Plyr('#player', {
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'pip', 'fullscreen'],
+        });
+
+        const elements = {
+            loader: document.getElementById('loader'),
+            pBar: document.getElementById('pBar'),
+            statusText: document.getElementById('statusText'),
+            groups: document.getElementById('groups'),
+            grid: document.getElementById('grid'),
+            importModal: document.getElementById('importModal'),
+            fileIn: document.getElementById('fileIn'),
+            searchInput: document.getElementById('searchInput'),
+            loadMoreBtn: document.getElementById('loadMoreBtn'),
+            themeToggle: document.getElementById('themeToggle'),
+            themeIcon: document.getElementById('themeIcon'),
+            lang: document.getElementById('lang'),
+            nowPlaying: document.getElementById('nowPlaying')
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPreferences();
+            applyTheme();
+            setupEventListeners();
+        });
+
+        function loadPreferences() {
+            if (App.currentLanguage) {
+                elements.lang.value = App.currentLanguage;
+                setLang(App.currentLanguage);
+            }
+        }
+
+        function setupEventListeners() {
+            // Modal closing with Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') hideModal();
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    elements.searchInput.focus();
+                }
+            });
+
+            // File input styling
+            elements.fileIn.addEventListener('change', () => {
+                if(elements.fileIn.files.length > 0) {
+                    const fileName = elements.fileIn.files[0].name;
+                    elements.fileIn.parentElement.querySelector('p').textContent = fileName;
+                    elements.fileIn.parentElement.style.borderColor = 'var(--accent)';
+                }
+            });
+        }
+
+        // --- Core Logic: Parsing ---
+        class M3UParser {
+            constructor() {
+                this.groups = new Map();
+                this.allChannels = [];
+                this.groups.set("الكل", []);
+            }
+
+            // Generate a deterministic ID based on URL to keep favorites working across reloads
+            generateId(url) {
+                let hash = 0;
+                if (url.length === 0) return hash;
+                for (let i = 0; i < url.length; i++) {
+                    const char = url.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0; 
+                }
+                return "ch_" + Math.abs(hash);
+            }
+
+            async parse(text) {
+                const lines = text.split('\n');
+                let currentItem = {};
+                
+                // Using a chunked approach to not freeze UI
+                const chunkSize = 2000;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (!line) continue;
+
+                    if (line.startsWith('#EXTINF:')) {
+                        const info = line.substring(8);
+                        const props = this.extractProps(info);
+                        const name = info.split(',').pop().trim() || "قناة غير معروفة";
+                        
+                        currentItem = { 
+                            name, 
+                            logo: props.logo || "", 
+                            group: props.group || "أخرى",
+                            searchText: (name + ' ' + (props.group || "")).toLowerCase()
+                        };
+                    } else if (!line.startsWith('#')) {
+                        // It's a URL
+                        if (currentItem.name) {
+                            currentItem.url = line;
+                            currentItem.id = this.generateId(line);
+                            this.addChannel(currentItem);
+                            currentItem = {};
+                        }
+                    }
+
+                    // Report progress
+                    if (i % chunkSize === 0) {
+                        const progress = (i / lines.length) * 100;
+                        updateProgress(progress, `جاري المعالجة: ${Math.round(progress)}%`);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+                
+                // Sort Groups Alphabetically
+                this.groups = new Map([...this.groups.entries()].sort());
+            }
+
+            extractProps(info) {
+                const logoMatch = info.match(/tvg-logo="([^"]*)"/);
+                const groupMatch = info.match(/group-title="([^"]*)"/);
+                return {
+                    logo: logoMatch ? logoMatch[1] : null,
+                    group: groupMatch ? groupMatch[1] : null
+                };
+            }
+
+            addChannel(channel) {
+                this.allChannels.push(channel);
+                if (!this.groups.has(channel.group)) {
+                    this.groups.set(channel.group, []);
+                }
+                this.groups.get(channel.group).push(channel);
+            }
+        }
+
+        async function processFile() {
+            const file = elements.fileIn.files[0];
+            if (!file) return alert("الرجاء اختيار ملف");
+
+            hideModal();
+            showLoader();
+
+            try {
+                const text = await file.text();
+                const parser = new M3UParser();
+                await parser.parse(text);
+                
+                App.channelsByGroup = parser.groups;
+                // Add "All" manually as it's not sorted in the loop
+                App.channelsByGroup.set("الكل", parser.allChannels);
+                App.allChannels = parser.allChannels;
+                
+                renderGroups();
+                renderChannels("الكل");
+                
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء قراءة الملف");
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // --- Favorites Logic ---
+        function toggleFavorite(e, channelId) {
+            e.stopPropagation(); // Prevent playing video when clicking heart
+            
+            const index = App.favorites.indexOf(channelId);
+            const icon = e.target;
+            
+            if (index === -1) {
+                // Add
+                App.favorites.push(channelId);
+                icon.classList.add('active', 'fas');
+                icon.classList.remove('far');
+            } else {
+                // Remove
+                App.favorites.splice(index, 1);
+                icon.classList.remove('active', 'fas');
+                icon.classList.add('far');
+                
+                // If we are currently viewing favorites, refresh the grid
+                if (App.currentGroup === 'المفضلة') {
+                    // Remove the card visually instantly
+                    const card = icon.closest('.card');
+                    card.style.transform = 'scale(0)';
+                    setTimeout(() => card.remove(), 200);
+                }
+            }
+            
+            localStorage.setItem('dami_favorites', JSON.stringify(App.favorites));
+        }
+
+        function getFavorites() {
+            return App.allChannels.filter(ch => App.favorites.includes(ch.id));
+        }
+
+        // --- UI Rendering ---
+        function renderGroups() {
+            const container = elements.groups;
+            container.innerHTML = '';
+
+            // Helper to create button
+            const createBtn = (name, isSpecial = false) => {
+                const btn = document.createElement('div');
+                btn.className = `group-btn ${isSpecial ? 'fav-group' : ''}`;
+                btn.id = `btn-${name.replace(/\s/g, '-')}`;
+                
+                if (isSpecial) {
+                    btn.innerHTML = `<i class="fas fa-heart ml-1"></i> ${name}`;
+                } else {
+                    btn.textContent = name;
+                }
+                
+                btn.onclick = () => renderChannels(name);
+                return btn;
+            };
+
+            // 1. Add Favorites Button
+            container.appendChild(createBtn("المفضلة", true));
+            
+            // 2. Add "All" Button
+            container.appendChild(createBtn("الكل"));
+
+            // 3. Add Other Groups
+            for (const [groupName] of App.channelsByGroup) {
+                if (groupName !== "الكل") {
+                    container.appendChild(createBtn(groupName));
+                }
+            }
+        }
+
+        function renderChannels(groupName, isAppend = false) {
+            App.currentGroup = groupName;
+            
+            // Highlight active button
+            document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+            const activeId = `btn-${groupName.replace(/\s/g, '-')}`;
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            // Data Source Logic
+            let sourceChannels = [];
+            if (groupName === 'المفضلة') {
+                sourceChannels = getFavorites();
+            } else {
+                sourceChannels = App.channelsByGroup.get(groupName) || [];
+            }
+
+            // Filtering
+            if (App.searchQuery) {
+                sourceChannels = sourceChannels.filter(ch => ch.searchText.includes(App.searchQuery));
+            }
+
+            App.filteredChannels = sourceChannels;
+            
+            if (!isAppend) {
+                App.currentPage = 1;
+                elements.grid.innerHTML = '';
+            }
+
+            renderBatch();
+            
+            // Empty State
+            if (App.filteredChannels.length === 0 && !isAppend) {
+                elements.grid.innerHTML = `
+                    <div class="col-span-full text-center py-10 opacity-50">
+                        <i class="fas fa-box-open text-4xl mb-2"></i>
+                        <p>لا توجد قنوات هنا</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderBatch() {
+            const start = (App.currentPage - 1) * App.itemsPerPage;
+            const end = start + App.itemsPerPage;
+            const batch = App.filteredChannels.slice(start, end);
+            
+            const fragment = document.createDocumentFragment();
+            
+            batch.forEach(ch => {
+                fragment.appendChild(createChannelCard(ch));
+            });
+            
+            elements.grid.appendChild(fragment);
+
+            // Update Load More Button
+            if (end >= App.filteredChannels.length) {
+                elements.loadMoreBtn.classList.add('hidden');
+            } else {
+                elements.loadMoreBtn.classList.remove('hidden');
+            }
+        }
+
+        function loadMoreChannels() {
+            App.currentPage++;
+            renderBatch();
+        }
+
+        // --- Security Improved Card Creation ---
+        function createChannelCard(channel) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            
+            // Event Listener for Play
+            div.onclick = () => playStream(channel.url, channel.name);
+
+            // 1. Favorite Button
+            const isFav = App.favorites.includes(channel.id);
+            const favBtn = document.createElement('div');
+            favBtn.className = `fav-icon ${isFav ? 'active' : ''}`;
+            favBtn.innerHTML = `<i class="${isFav ? 'fas' : 'far'} fa-heart"></i>`;
+            favBtn.onclick = (e) => toggleFavorite(e, channel.id);
+            div.appendChild(favBtn);
+
+            // 2. Image
+            const img = document.createElement('img');
+            img.src = channel.logo;
+            img.loading = "lazy"; // Performance boost
+            img.onerror = function() { 
+                this.src = 'https://cdn-icons-png.flaticon.com/512/2965/2965363.png'; 
+                this.style.padding = "10px";
+            };
+            img.alt = channel.name;
+            div.appendChild(img);
+
+            // 3. Title (Safe Text)
+            const title = document.createElement('div');
+            title.className = 'text-[10px] font-bold truncate';
+            title.textContent = channel.name;
+            div.appendChild(title);
+
+            // 4. Group (Safe Text)
+            const group = document.createElement('div');
+            group.className = 'text-[8px] text-gray-500 mt-1 truncate';
+            group.textContent = channel.group;
+            div.appendChild(group);
+
+            return div;
+        }
+
+        // --- Search Optimization (Debounce) ---
+        function debouncedSearch() {
+            clearTimeout(App.searchTimeout);
+            App.searchTimeout = setTimeout(() => {
+                const val = elements.searchInput.value.trim().toLowerCase();
+                if (val !== App.searchQuery) {
+                    App.searchQuery = val;
+                    renderChannels(App.currentGroup);
+                }
+            }, 300); // Wait 300ms after stopping typing
+        }
+
+        // --- Player ---
+        function playStream(url, name) {
+            const video = document.getElementById('player');
+            
+            if (App.hlsInstance) App.hlsInstance.destroy();
+
+            if (Hls.isSupported() && (url.includes('.m3u8') || !video.canPlayType('application/vnd.apple.mpegurl'))) {
+                App.hlsInstance = new Hls();
+                App.hlsInstance.loadSource(url);
+                App.hlsInstance.attachMedia(video);
+                App.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            } else {
+                // Fallback for direct MP4 etc
+                video.src = url;
+                video.play();
+            }
+
+            // Update UI
+            elements.nowPlaying.textContent = `جاري التشغيل: ${name}`;
+            elements.nowPlaying.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Utilities ---
+        function toggleTheme() {
+            App.currentTheme = App.currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme();
+            localStorage.setItem('dami_theme', App.currentTheme);
+        }
+
+        function applyTheme() {
+            document.documentElement.setAttribute('data-theme', App.currentTheme);
+            elements.themeIcon.className = App.currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function setLang(lang) {
+            App.currentLanguage = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.documentElement.lang = lang;
+            localStorage.setItem('dami_language', lang);
+        }
+
+        function showModal() { elements.importModal.style.display = 'flex'; }
+        function hideModal() { elements.importModal.style.display = 'none'; }
+        function showLoader() { elements.loader.classList.remove('hidden'); }
+        function hideLoader() { elements.loader.classList.add('hidden'); elements.pBar.style.width = '0%'; }
+        function updateProgress(p, t) { elements.pBar.style.width = `${p}%`; elements.statusText.textContent = t; }
+
+    </script>
+</body>
+</html>
