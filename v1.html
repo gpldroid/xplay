@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAMI X-PRO | Stable Version</title>
+    <meta name="description" content="مشغل قنوات IPTV متطور يدعم تنسيق M3U مع واجهة عربية متكاملة وإمكانية الترجمة.">
+    <meta name="keywords" content="IPTV, M3U, قنوات, مشغل, DAMI X-PRO, عربي, تلفزيون">
+    <meta name="author" content="عماد الدين لمراني">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --accent: #d4af37;
+            --bg: #050505;
+            --card-bg: #111;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border: #333;
+        }
+
+        [data-theme="light"] {
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
+        }
+
+        .group-btn {
+            transition: all 0.2s;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            padding: 6px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .group-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .group-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .group-btn:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:focus-within {
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+
+        .card img {
+            width: 100%;
+            height: 80px;
+            object-fit: contain;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-bar-inner {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .search-input {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            transform: rotate(15deg);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .group-btn, .loading-bar-inner, .card {
+                transition: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 10px;
+                padding: 15px;
+            }
+            
+            .card img {
+                height: 65px;
+            }
+            
+            .header-container {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start !important;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 8px;
+            }
+            
+            .card img {
+                height: 55px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .load-more-btn {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .load-more-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .load-more-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--border);
+        }
+
+        .player-container {
+            background: linear-gradient(135deg, #1a1a1a, #000);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader" class="hidden fixed inset-0 bg-black/95 z-[2000] flex flex-col items-center justify-center">
+        <div class="w-72 h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="pBar" class="loading-bar-inner"></div>
+        </div>
+        <p class="mt-4 text-sm font-bold" id="statusText">جاري تحميل الملف...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="p-4 bg-zinc-950 border-b border-zinc-800 sticky top-0 z-50 transition-colors duration-300" style="background: var(--card-bg); border-color: var(--border);">
+        <div class="max-w-7xl mx-auto flex justify-between items-center header-container">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-[var(--accent)] to-amber-500"></div>
+                <h1 class="font-black text-xl" style="color: var(--accent);">DAMI X-PRO</h1>
+            </div>
+            
+            <div class="flex items-center gap-3 header-actions">
+                <!-- Search Box -->
+                <div class="relative hidden" id="searchContainer">
+                    <input type="text" id="searchInput" 
+                           placeholder="ابحث عن قناة..." 
+                           class="search-input text-sm p-2 pl-10 rounded-full w-48 focus:outline-none">
+                    <i class="fas fa-search absolute right-3 top-3 text-zinc-400"></i>
+                </div>
+                
+                <!-- Theme Toggle -->
+                <button id="themeToggle" class="theme-toggle w-10 h-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <!-- Language Select -->
+                <select id="lang" onchange="setLang(this.value)" class="bg-zinc-900 text-white text-xs p-2 rounded border-none" style="background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--border);">
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+                
+                <!-- Import Button -->
+                <button onclick="showModal()" class="bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity">
+                    استيراد M3U
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="min-h-screen pb-20">
+        <!-- Player Section -->
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="player-container">
+                <video id="player" playsinline controls></video>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div id="groups" class="flex overflow-x-auto p-4 gap-2 no-scrollbar border-b" style="border-color: var(--border); background: var(--card-bg);">
+            <!-- Groups will be dynamically added here -->
+        </div>
+
+        <!-- Search Results Indicator -->
+        <div id="searchResults" class="hidden text-center py-4 text-sm" style="color: var(--accent);">
+            <i class="fas fa-search mr-2"></i>
+            <span id="resultsCount">0</span> نتيجة بحث
+            <button onclick="clearSearch()" class="text-xs text-red-400 mr-4 hover:text-red-300">
+                <i class="fas fa-times ml-1"></i> مسح البحث
+            </button>
+        </div>
+
+        <!-- Channels Grid -->
+        <div id="grid" class="channel-grid">
+            <div class="empty-state">
+                <i class="fas fa-tv"></i>
+                <h3 class="text-lg font-bold mb-2">لا توجد قنوات</h3>
+                <p class="text-sm mb-4">يرجى استيراد ملف M3U للبدء</p>
+                <button onclick="showModal()" class="px-6 py-2 rounded-full text-sm font-bold" style="background: var(--accent); color: #000;">
+                    استيراد ملف
+                </button>
+            </div>
+        </div>
+
+        <!-- Load More Button -->
+        <button id="loadMore" class="load-more-btn hidden" onclick="loadMoreChannels()">
+            <i class="fas fa-chevron-down ml-2"></i> تحميل المزيد
+        </button>
+    </main>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="bg-zinc-900 p-8 rounded-2xl w-full max-w-md border border-zinc-800" style="background: var(--card-bg); border-color: var(--border);">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-r from-[var(--accent)] to-amber-500 flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-upload text-2xl text-black"></i>
+                </div>
+                <h2 class="text-xl font-bold mb-2">إضافة قائمة تشغيل</h2>
+                <p class="text-sm" style="color: var(--text-secondary);">اختر ملف M3U أو M3U8</p>
+            </div>
+            
+            <div class="border-2 border-dashed rounded-xl p-8 text-center mb-6" style="border-color: var(--border);">
+                <i class="fas fa-file-alt text-4xl mb-4" style="color: var(--text-secondary);"></i>
+                <p class="text-sm mb-2" style="color: var(--text-secondary);">اسحب وأفلت الملف هنا</p>
+                <p class="text-xs" style="color: var(--text-secondary);">أو</p>
+                <input type="file" id="fileIn" accept=".m3u,.m3u8" class="hidden">
+                <label for="fileIn" class="inline-block mt-4 px-6 py-2 rounded-full text-sm font-bold cursor-pointer" style="background: var(--accent); color: #000;">
+                    اختر ملف
+                </label>
+                <p id="fileName" class="text-xs mt-2" style="color: var(--accent);"></p>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="processFile()" class="flex-1 bg-[var(--accent)] text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity">
+                    ابدأ الآن
+                </button>
+                <button onclick="hideModal()" class="flex-1 text-zinc-500 text-sm py-3 rounded-xl border" style="border-color: var(--border);">
+                    إلغاء
+                </button>
+            </div>
+            
+            <p class="text-xs text-center mt-6" style="color: var(--text-secondary);">
+                يدعم جميع تنسيقات M3U/M3U8
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-6 mt-10 transition-colors duration-300" style="background: var(--card-bg); border-color: var(--border);">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-center md:text-right">
+                    <p class="font-bold text-lg mb-2" style="color: var(--accent);">DAMI X-PRO</p>
+                    <p class="text-sm" style="color: var(--text-secondary);">
+                        مشغل IPTV متطور - الإصدار المستقر
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm" style="color: var(--text-secondary);">
+                        <i class="fas fa-copyright ml-1"></i> 2024 جميع الحقوق محفوظة
+                    </p>
+                    <p class="text-sm font-bold mt-1" style="color: var(--accent);">
+                        عماد الدين لمراني
+                    </p>
+                </div>
+                
+                <div class="flex gap-4">
+                    <a href="#" class="text-sm hover:opacity-80 transition-opacity" style="color: var(--text-secondary);">
+                        <i class="fas fa-info-circle ml-1"></i> عن المشروع
+                    </a>
+                    <a href="#" class="text-sm hover:opacity-80 transition-opacity" style="color: var(--text-secondary);">
+                        <i class="fas fa-envelope ml-1"></i> تواصل معنا
+                    </a>
+                </div>
+            </div>
+            
+            <div class="text-center mt-6 pt-6 border-t text-xs" style="border-color: var(--border); color: var(--text-secondary);">
+                <p>هذا المشروع مفتوح المصدر للأغراض التعليمية فقط</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.10/dist/hls.min.js"></script>
+
+    <script>
+        // App Modules
+        const App = {
+            // Data Storage
+            channelsByGroup: new Map(),
+            allChannels: [],
+            filteredChannels: [],
+            currentGroup: 'الكل',
+            currentTheme: 'dark',
+            isSearching: false,
+            currentPage: 0,
+            itemsPerPage: 50,
+            
+            // DOM Elements
+            elements: {
+                loader: null,
+                pBar: null,
+                statusText: null,
+                groups: null,
+                grid: null,
+                searchInput: null,
+                searchContainer: null,
+                searchResults: null,
+                resultsCount: null,
+                loadMoreBtn: null,
+                themeToggle: null,
+                fileInput: null,
+                fileName: null
+            },
+            
+            // Player
+            player: null,
+            hlsInstance: null,
+            
+            // Initialize App
+            init: function() {
+                this.cacheElements();
+                this.bindEvents();
+                this.loadPreferences();
+                this.initPlayer();
+                this.setupDragAndDrop();
+            },
+            
+            cacheElements: function() {
+                this.elements.loader = document.getElementById('loader');
+                this.elements.pBar = document.getElementById('pBar');
+                this.elements.statusText = document.getElementById('statusText');
+                this.elements.groups = document.getElementById('groups');
+                this.elements.grid = document.getElementById('grid');
+                this.elements.searchInput = document.getElementById('searchInput');
+                this.elements.searchContainer = document.getElementById('searchContainer');
+                this.elements.searchResults = document.getElementById('searchResults');
+                this.elements.resultsCount = document.getElementById('resultsCount');
+                this.elements.loadMoreBtn = document.getElementById('loadMore');
+                this.elements.themeToggle = document.getElementById('themeToggle');
+                this.elements.fileInput = document.getElementById('fileIn');
+                this.elements.fileName = document.getElementById('fileName');
+            },
+            
+            bindEvents: function() {
+                // Theme Toggle
+                this.elements.themeToggle.addEventListener('click', () => this.toggleTheme());
+                
+                // File Input Change
+                this.elements.fileInput.addEventListener('change', (e) => {
+                    if (e.target.files[0]) {
+                        this.elements.fileName.textContent = e.target.files[0].name;
+                    }
+                });
+                
+                // Search Input
+                if (this.elements.searchInput) {
+                    this.elements.searchInput.addEventListener('input', (e) => {
+                        this.filterChannels(e.target.value);
+                    });
+                }
+            },
+            
+            loadPreferences: function() {
+                // Load theme
+                const savedTheme = localStorage.getItem('dami_theme');
+                if (savedTheme) {
+                    this.currentTheme = savedTheme;
+                    this.applyTheme(savedTheme);
+                }
+                
+                // Load language
+                const savedLang = localStorage.getItem('dami_language') || 'ar';
+                document.getElementById('lang').value = savedLang;
+                setLang(savedLang);
+                
+                // Load last group
+                const lastGroup = localStorage.getItem('dami_lastGroup');
+                if (lastGroup) {
+                    this.currentGroup = lastGroup;
+                }
+            },
+            
+            savePreferences: function() {
+                localStorage.setItem('dami_theme', this.currentTheme);
+                localStorage.setItem('dami_language', document.getElementById('lang').value);
+                localStorage.setItem('dami_lastGroup', this.currentGroup);
+            },
+            
+            initPlayer: function() {
+                this.player = new Plyr('#player', {
+                    controls: [
+                        'play-large',
+                        'play',
+                        'progress',
+                        'current-time',
+                        'duration',
+                        'mute',
+                        'volume',
+                        'settings',
+                        'fullscreen'
+                    ],
+                    settings: ['quality', 'speed']
+                });
+            },
+            
+            setupDragAndDrop: function() {
+                const dropZone = document.querySelector('#importModal .border-dashed');
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.style.borderColor = 'var(--accent)';
+                        dropZone.style.background = 'rgba(212, 175, 55, 0.1)';
+                    });
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.style.borderColor = '';
+                        dropZone.style.background = '';
+                    });
+                });
+                
+                dropZone.addEventListener('drop', (e) => {
+                    const file = e.dataTransfer.files[0];
+                    if (file && (file.name.endsWith('.m3u') || file.name.endsWith('.m3u8'))) {
+                        this.elements.fileInput.files = e.dataTransfer.files;
+                        this.elements.fileName.textContent = file.name;
+                    }
+                });
+            },
+            
+            toggleTheme: function() {
+                this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+                this.applyTheme(this.currentTheme);
+                this.savePreferences();
+            },
+            
+            applyTheme: function(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                const icon = this.elements.themeToggle.querySelector('i');
+                if (theme === 'dark') {
+                    icon.className = 'fas fa-moon';
+                } else {
+                    icon.className = 'fas fa-sun';
+                }
+            },
+            
+            showLoader: function() {
+                this.elements.loader.classList.remove('hidden');
+            },
+            
+            hideLoader: function() {
+                this.elements.loader.classList.add('hidden');
+            },
+            
+            updateProgress: function(percent, text) {
+                this.elements.pBar.style.width = percent + '%';
+                this.elements.statusText.textContent = text;
+            }
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+
+        // Show/Hide Modal
+        function showModal() {
+            document.getElementById('importModal').style.display = 'flex';
+        }
+
+        function hideModal() {
+            document.getElementById('importModal').style.display = 'none';
+            App.elements.fileName.textContent = '';
+            App.elements.fileInput.value = '';
+        }
+
+        // Process M3U File
+        async function processFile() {
+            const file = App.elements.fileInput.files[0];
+            if (!file) {
+                alert("اختر ملفاً أولاً");
+                return;
+            }
+
+            hideModal();
+            App.showLoader();
+            
+            try {
+                const text = await file.text();
+                const lines = text.split('\n');
+                
+                // Reset data
+                App.channelsByGroup.clear();
+                App.allChannels = [];
+                App.channelsByGroup.set("الكل", []);
+                
+                let currentItem = {};
+                const total = lines.length;
+                let processed = 0;
+
+                for (let i = 0; i < total; i++) {
+                    const line = lines[i].trim();
+                    
+                    if (line.startsWith('#EXTINF:')) {
+                        const name = line.split(',').pop() || "Unknown";
+                        const logo = line.match(/tvg-logo="([^"]*)"/)?.[1] || "";
+                        const group = line.match(/group-title="([^"]*)"/)?.[1] || "Other";
+                        currentItem = { 
+                            name, 
+                            logo, 
+                            group,
+                            id: Math.random().toString(36).substr(2, 9)
+                        };
+                    } else if (line.startsWith('http')) {
+                        currentItem.url = line;
+                        App.allChannels.push(currentItem);
+                        
+                        // Add to group
+                        if (!App.channelsByGroup.has(currentItem.group)) {
+                            App.channelsByGroup.set(currentItem.group, []);
+                        }
+                        App.channelsByGroup.get(currentItem.group).push(currentItem);
+                        App.channelsByGroup.get("الكل").push(currentItem);
+                        
+                        currentItem = {};
+                    }
+
+                    // Update progress
+                    processed++;
+                    if (processed % 100 === 0 || processed === total) {
+                        const progress = (processed / total) * 100;
+                        App.updateProgress(progress, `جاري التحليل: ${Math.round(progress)}%`);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+
+                // Show search if we have channels
+                if (App.allChannels.length > 0) {
+                    App.elements.searchContainer.classList.remove('hidden');
+                }
+
+                renderGroups();
+                renderChannels("الكل");
+                App.hideLoader();
+                
+                // Save to localStorage for persistence
+                localStorage.setItem('dami_channels', JSON.stringify(Array.from(App.channelsByGroup.entries())));
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                App.hideLoader();
+                alert('حدث خطأ أثناء معالجة الملف: ' + error.message);
+            }
+        }
+
+        // Render Groups
+        function renderGroups() {
+            const container = App.elements.groups;
+            container.innerHTML = '';
+            
+            // Create fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            Array.from(App.channelsByGroup.keys()).forEach(cat => {
+                const btn = document.createElement('div');
+                btn.className = 'group-btn';
+                btn.id = `btn-${cat}`;
+                btn.textContent = cat;
+                btn.onclick = () => {
+                    App.currentGroup = cat;
+                    App.isSearching = false;
+                    App.currentPage = 0;
+                    renderChannels(cat);
+                    App.savePreferences();
+                };
+                
+                if (cat === App.currentGroup) {
+                    btn.classList.add('active');
+                }
+                
+                fragment.appendChild(btn);
+            });
+            
+            container.appendChild(fragment);
+            
+            // Scroll to active button
+            const activeBtn = container.querySelector('.group-btn.active');
+            if (activeBtn) {
+                activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+
+        // Render Channels with Pagination
+        function renderChannels(groupName) {
+            const grid = App.elements.grid;
+            grid.innerHTML = '';
+            
+            let channels;
+            if (App.isSearching && App.filteredChannels.length > 0) {
+                channels = App.filteredChannels;
+            } else {
+                channels = App.channelsByGroup.get(groupName) || [];
+            }
+            
+            if (channels.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tv"></i>
+                        <h3 class="text-lg font-bold mb-2">لا توجد قنوات</h3>
+                        <p class="text-sm">لم يتم العثور على قنوات في هذه المجموعة</p>
+                    </div>
+                `;
+                App.elements.loadMoreBtn.classList.add('hidden');
+                return;
+            }
+            
+            // Update groups buttons
+            document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${groupName}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            // Reset pagination
+            App.currentPage = 1;
+            const startIndex = 0;
+            const endIndex = Math.min(App.itemsPerPage, channels.length);
+            
+            renderChannelBatch(channels.slice(startIndex, endIndex));
+            
+            // Show/hide load more button
+            if (channels.length > App.itemsPerPage) {
+                App.elements.loadMoreBtn.classList.remove('hidden');
+            } else {
+                App.elements.loadMoreBtn.classList.add('hidden');
+            }
+        }
+
+        // Render a batch of channels
+        function renderChannelBatch(channels) {
+            const grid = App.elements.grid;
+            const fragment = document.createDocumentFragment();
+            
+            channels.forEach(ch => {
+                const card = document.createElement('div');
+                card.className = 'card fade-in';
+                card.onclick = () => playStream(ch.url, ch.name);
+                
+                const img = document.createElement('img');
+                img.src = ch.logo || 'https://cdn-icons-png.flaticon.com/512/2965/2965363.png';
+                img.alt = ch.name;
+                img.onerror = function() {
+                    this.src = 'https://cdn-icons-png.flaticon.com/512/2965/2965363.png';
+                };
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'text-xs font-bold truncate mt-2';
+                nameDiv.textContent = ch.name;
+                
+                card.appendChild(img);
+                card.appendChild(nameDiv);
+                fragment.appendChild(card);
+            });
+            
+            grid.appendChild(fragment);
+        }
+
+        // Load More Channels
+        function loadMoreChannels() {
+            const loadMoreBtn = App.elements.loadMoreBtn;
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري التحميل...';
+            
+            setTimeout(() => {
+                let channels;
+                if (App.isSearching && App.filteredChannels.length > 0) {
+                    channels = App.filteredChannels;
+                } else {
+                    channels = App.channelsByGroup.get(App.currentGroup) || [];
+                }
+                
+                App.currentPage++;
+                const startIndex = (App.currentPage - 1) * App.itemsPerPage;
+                const endIndex = startIndex + App.itemsPerPage;
+                
+                const nextBatch = channels.slice(startIndex, endIndex);
+                if (nextBatch.length > 0) {
+                    renderChannelBatch(nextBatch);
+                    
+                    // Disable button if no more items
+                    if (endIndex >= channels.length) {
+                        loadMoreBtn.classList.add('hidden');
+                    }
+                }
+                
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.innerHTML = '<i class="fas fa-chevron-down ml-2"></i> تحميل المزيد';
+            }, 500);
+        }
+
+        // Filter Channels by Search
+        function filterChannels(query) {
+            const searchQuery = query.trim().toLowerCase();
+            
+            if (searchQuery === '') {
+                clearSearch();
+                return;
+            }
+            
+            App.isSearching = true;
+            App.filteredChannels = App.allChannels.filter(ch => 
+                ch.name.toLowerCase().includes(searchQuery) ||
+                ch.group.toLowerCase().includes(searchQuery)
+            );
+            
+            // Show search results
+            App.elements.searchResults.classList.remove('hidden');
+            App.elements.resultsCount.textContent = App.filteredChannels.length;
+            
+            // Render filtered channels
+            const grid = App.elements.grid;
+            grid.innerHTML = '';
+            
+            if (App.filteredChannels.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3 class="text-lg font-bold mb-2">لا توجد نتائج</h3>
+                        <p class="text-sm">لم نعثر على قنوات تطابق بحثك</p>
+                    </div>
+                `;
+                App.elements.loadMoreBtn.classList.add('hidden');
+            } else {
+                App.currentPage = 0;
+                loadMoreChannels();
+            }
+        }
+
+        // Clear Search
+        function clearSearch() {
+            App.isSearching = false;
+            App.filteredChannels = [];
+            App.elements.searchInput.value = '';
+            App.elements.searchResults.classList.add('hidden');
+            renderChannels(App.currentGroup);
+        }
+
+        // Play Stream
+        function playStream(url, channelName = '') {
+            const v = document.getElementById('player');
+            
+            try {
+                // Destroy previous HLS instance
+                if (App.hlsInstance) {
+                    App.hlsInstance.destroy();
+                    App.hlsInstance = null;
+                }
+                
+                // Show loading state
+                v.poster = 'https://cdn-icons-png.flaticon.com/512/2965/2965363.png';
+                v.innerHTML = '';
+                
+                // Set up player based on stream type
+                if (Hls.isSupported() && url.includes('.m3u8')) {
+                    App.hlsInstance = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        backBufferLength: 90,
+                        maxBufferLength: 30,
+                        maxMaxBufferLength: 60
+                    });
+                    
+                    App.hlsInstance.loadSource(url);
+                    App.hlsInstance.attachMedia(v);
+                    
+                    App.hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        v.play().catch(e => console.log('Auto-play prevented:', e));
+                    });
+                    
+                    App.hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+                        console.error('HLS error:', data);
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    App.hlsInstance.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    App.hlsInstance.recoverMediaError();
+                                    break;
+                                default:
+                                    // Try fallback to native playback
+                                    v.src = url;
+                                    break;
+                            }
+                        }
+                    });
+                } else {
+                    v.src = url;
+                    v.play().catch(e => console.log('Play error:', e));
+                }
+                
+                // Scroll to top smoothly
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Update player title if available
+                if (channelName) {
+                    document.title = `DAMI X-PRO | ${channelName}`;
+                }
+                
+            } catch (error) {
+                console.error('Error playing stream:', error);
+                alert('تعذر تشغيل القناة. يرجى التأكد من الرابط.');
+            }
+        }
+
+        // Set Language
+        function setLang(l) {
+            document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+            document.documentElement.lang = l;
+            localStorage.setItem('dami_language', l);
+            
+            // Update button text based on language
+            const importBtn = document.querySelector('button[onclick="showModal()"]');
+            if (importBtn) {
+                importBtn.textContent = l === 'ar' ? 'استيراد M3U' : 
+                                      l === 'en' ? 'Import M3U' : 
+                                      'Importer M3U';
+            }
+        }
+
+        // Load channels from localStorage on page load
+        window.addEventListener('load', () => {
+            const savedChannels = localStorage.getItem('dami_channels');
+            if (savedChannels) {
+                try {
+                    App.channelsByGroup = new Map(JSON.parse(savedChannels));
+                    App.allChannels = App.channelsByGroup.get("الكل") || [];
+                    
+                    if (App.allChannels.length > 0) {
+                        App.elements.searchContainer.classList.remove('hidden');
+                        renderGroups();
+                        renderChannels(App.currentGroup);
+                    }
+                } catch (e) {
+                    console.error('Error loading saved channels:', e);
+                }
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + F for search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                App.elements.searchInput.focus();
+            }
+            
+            // Escape to clear search
+            if (e.key === 'Escape' && App.isSearching) {
+                clearSearch();
+            }
+        });
+    </script>
+</body>
+</html>
